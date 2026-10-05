@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OemAi.Agent/OemAi.Agent.csproj" />
+    <Project Path="src/OemAi.Api/OemAi.Api.csproj" />
+    <Project Path="src/OemAi.Core/OemAi.Core.csproj" />
+    <Project Path="src/OemAi.Desktop/OemAi.Desktop.csproj" />
+    <Project Path="src/OemAi.Infrastructure/OemAi.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OemAi.Api.Tests/OemAi.Api.Tests.csproj" />
+    <Project Path="tests/OemAi.Core.Tests/OemAi.Core.Tests.csproj" />
+  </Folder>
+</Solution>

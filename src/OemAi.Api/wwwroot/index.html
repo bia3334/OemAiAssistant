@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OEM AI フリートコンソール</title>
+    <link rel="icon" href="data:,">
+    <style>
+        /* Corporate light theme: flat, square, blue accent. Offline demo: no external assets or web fonts. */
+        :root {
+            --brand-red: #ED0007;
+            --brand-blue: #007BC0;
+            --blue-hover: #00629A;
+            --blue-light: #E8F1FF;
+            --green: #00884A;
+            --turquoise: #18837E;
+            --purple: #9E2896;
+            --yellow: #FFCF00;
+
+            --gray-bg: #EFF1F2;
+            --gray-border: #E0E2E5;
+            --gray-strong: #C1C7CC;
+            --gray-muted: #71767C;     /* secondary text on white only, non-text accents */
+            --text-secondary: #595E62; /* secondary text that may sit on a tinted background */
+            --text-primary: #2E3033;
+            --surface: #FFFFFF;
+
+            --success: #00884A;
+            --success-bg: #E2F5E7;
+            --warning: #FFCF00;
+            --warning-bg: #FFF4BF;
+            --error: #ED0007;
+            --error-bg: #FFECEC;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--brand-blue);
+            outline-offset: 2px;
+        }
+
+        body {
+            font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", "Noto Sans JP", system-ui, sans-serif;
+            background: var(--gray-bg);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Supergraphic band */
+        body::before {
+            content: '';
+            flex-shrink: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--purple) 0%, var(--brand-red) 22%, #C535BC 38%, var(--brand-blue) 55%, var(--turquoise) 78%, var(--green) 100%);
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--gray-border);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem 1.5rem;
+        }
+
+        .brand-logo {
+            display: block;
+            height: 40px;
+            width: auto;
+        }
+
+        .header-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Break Japanese at phrase boundaries (Chrome/Edge; others ignore it) */
+        .header-text,
+        .chat-header h2,
+        .welcome-message {
+            word-break: auto-phrase;
+        }
+
+        .header-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .header-text p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+
+        .kpis {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .kpi {
+            background: var(--surface);
+            border: 1px solid var(--gray-border);
+            border-top: 3px solid var(--brand-blue);
+            padding: 0.35rem 0.9rem 0.4rem;
+            min-width: 110px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kpi--online {
+            border-top-color: var(--green);
+        }
+
+        .kpi--attention {
+            border-top-color: var(--yellow);
+        }
+
+        .kpi--attention.alert {
+            border-top-color: var(--brand-red);
+        }
+
+        .kpi-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .kpi-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--gray-muted);
+        }
+
+        .kpi.alert .kpi-value {
+            color: var(--brand-red);
+        }
+
+        .lang-switch {
+            display: flex;
+        }
+
+        .lang-switch button {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--gray-strong);
+            border-radius: 0;
+            padding: 0.35rem 0.75rem;
+            min-height: 32px;
+            font: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .lang-switch button + button {
+            border-left: none;
+        }
+
+        .lang-switch button:hover {
+            background: var(--blue-light);
+        }
+
+        .lang-switch button[aria-pressed="true"] {
+            background: var(--brand-blue);
+            border-color: var(--brand-blue);
+            color: var(--surface);
+            font-weight: 700;
+        }
+
+        .banner {
+            background: var(--error-bg);
+            border-left: 4px solid var(--error);
+            border-bottom: 1px solid var(--gray-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .section-title {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        /* Left column: filter + device list */
+        .fleet-panel {
+            width: 320px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--gray-border);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-height: 0;
+        }
+
+        .fleet-panel select {
+            background: var(--gray-border);
+            border: none;
+            border-bottom: 1px solid var(--text-secondary);
+            border-radius: 0;
+            color: var(--text-primary);
+            padding: 0.55rem 0.75rem;
+            font: inherit;
+            font-size: 0.9rem;
+        }
+
+        .fleet-panel select:hover {
+            background: var(--gray-strong);
+        }
+
+        .device-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-height: 0;
+        }
+
+        .list-note {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .device-row {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-start;
+            width: 100%;
+            text-align: left;
+            background: var(--surface);
+            border: 1px solid var(--gray-border);
+            border-radius: 0;
+            padding: 0.65rem 0.75rem;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .device-row:hover {
+            background: var(--gray-bg);
+            border-color: var(--gray-strong);
+        }
+
+        /* Inset so the scroll container doesn't clip the focus ring */
+        .device-row:focus-visible {
+            outline-offset: -2px;
+        }
+
+        .device-row[aria-pressed="true"] {
+            background: var(--blue-light);
+            border-left: 4px solid var(--brand-blue);
+            padding-left: calc(0.75rem - 3px);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            margin-top: 0.45rem;
+            border-radius: 50%;
+            background: var(--success);
+            flex-shrink: 0;
+        }
+
+        .dot.offline {
+            background: var(--error);
+        }
+
+        .row-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .row-top strong {
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .row-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            overflow-wrap: anywhere;
+        }
+
+        .row-stats {
+            font-size: 0.75rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.2rem;
+        }
+
+        .badge,
+        .no-issues {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.1rem 0.45rem;
+            color: var(--text-primary);
+            background: var(--warning-bg);
+            border: 1px solid var(--warning);
+        }
+
+        .badge.offline {
+            background: var(--error-bg);
+            border-color: var(--error);
+        }
+
+        .no-issues {
+            background: var(--success-bg);
+            border-color: var(--success);
+        }
+
+        /* White fill keeps LIVE green readable on the tinted selected row */
+        .tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 0.05rem 0.35rem;
+            background: var(--surface);
+            border: 1px solid var(--gray-muted);
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .tag.live {
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        /* Right column: detail + chat */
+        .detail-col {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.25rem;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--gray-border);
+        }
+
+        .empty-state {
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .detail {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .detail-head {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .detail-head > div {
+            min-width: 0;
+        }
+
+        .detail-head h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .detail-meta {
+            font-size: 0.8rem;
+            color: var(--gray-muted);
+            margin-top: 0.2rem;
+            overflow-wrap: anywhere;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+
+        .telemetry-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .telemetry-label {
+            font-size: 0.75rem;
+            color: var(--gray-muted);
+        }
+
+        .telemetry-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .telemetry-value.online::before,
+        .telemetry-value.offline::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .telemetry-value.offline::before {
+            background: var(--error);
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--gray-border);
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: var(--brand-blue);
+            transition: width 0.3s ease;
+        }
+
+        .stat-bar-fill.warning {
+            background: var(--warning);
+        }
+
+        .stat-bar-fill.critical {
+            background: var(--error);
+        }
+
+        .issue-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--gray-border);
+        }
+
+        .chat-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 0.75rem 1rem;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--blue-light);
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background: var(--gray-bg);
+        }
+
+        .message.error {
+            background: var(--error-bg);
+            border-left: 4px solid var(--error);
+        }
+
+        .message .sender {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Keep the model's line breaks (numbered lists); not on .message itself — the typing indicator markup has whitespace */
+        .message .sender + div {
+            white-space: pre-wrap;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 0.5rem;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--gray-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0 1.25rem 0.75rem;
+        }
+
+        .chip {
+            background: var(--surface);
+            color: var(--brand-blue);
+            border: 1px solid var(--gray-strong);
+            border-radius: 0;
+            padding: 0.4rem 0.8rem;
+            font: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        /* Darker blue on the light-blue hover fill keeps contrast above 4.5:1 */
+        .chip:hover:not(:disabled) {
+            background: var(--blue-light);
+            border-color: var(--brand-blue);
+            color: var(--blue-hover);
+        }
+
+        .chip:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .input-area {
+            border-top: 1px solid var(--gray-border);
+            padding: 1rem 1.25rem;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .input-wrapper input {
+            flex: 1;
+            min-width: 0;
+            background: var(--gray-border);
+            border: none;
+            border-bottom: 1px solid var(--text-secondary);
+            border-radius: 0;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font: inherit;
+            font-size: 0.95rem;
+        }
+
+        .input-wrapper input:focus {
+            border-bottom-color: var(--brand-blue);
+        }
+
+        .input-wrapper input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper button {
+            background: var(--brand-blue);
+            color: var(--surface);
+            border: none;
+            border-radius: 0;
+            padding: 0.75rem 1.5rem;
+            font: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-wrapper button:hover:not(:disabled),
+        .input-wrapper button:active:not(:disabled) {
+            background: var(--blue-hover);
+        }
+
+        .input-wrapper button:disabled {
+            background: var(--gray-strong);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .input-wrapper button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .welcome-message h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+            }
+
+            header,
+            .banner {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .brand-logo {
+                height: 32px;
+            }
+
+            .header-text h1 {
+                font-size: 1.05rem;
+            }
+
+            /* Title + language switch on the first line, KPIs below */
+            .kpis {
+                order: 1;
+                width: 100%;
+            }
+
+            .kpi {
+                flex: 1;
+                min-width: 0;
+                padding-left: 0.6rem;
+                padding-right: 0.6rem;
+            }
+
+            .main-container {
+                flex-direction: column;
+                overflow: visible;
+            }
+
+            .fleet-panel {
+                width: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--gray-border);
+                padding: 1rem 16px;
+            }
+
+            .device-list {
+                max-height: 40vh;
+            }
+
+            .detail-col {
+                padding: 1rem 16px;
+                overflow: visible;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .input-wrapper button {
+                padding: 0.75rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img class="brand-logo" src="logo.svg" alt="Logo" onerror="this.remove()">
+        <div class="header-text">
+            <h1 data-i18n="title">OEM AI フリートコンソール</h1>
+            <p data-i18n="subtitle">パートナー向けデバイス健全性・AIサポート</p>
+        </div>
+        <div class="kpis">
+            <div class="kpi kpi--devices">
+                <span class="kpi-value" id="kpi-devices">--</span>
+                <span class="kpi-label" data-i18n="kpiDevices">デバイス数</span>
+            </div>
+            <div class="kpi kpi--online">
+                <span class="kpi-value" id="kpi-online">--</span>
+                <span class="kpi-label" data-i18n="kpiOnline">オンライン</span>
+            </div>
+            <div class="kpi kpi--attention" id="kpi-attention-tile">
+                <span class="kpi-value" id="kpi-attention">--</span>
+                <span class="kpi-label" data-i18n="kpiAttention">要対応</span>
+            </div>
+        </div>
+        <div class="lang-switch" role="group" aria-label="Language / 言語">
+            <button type="button" data-lang="ja" lang="ja" aria-pressed="true">日本語</button>
+            <button type="button" data-lang="en" lang="en" aria-pressed="false">EN</button>
+        </div>
+    </header>
+
+    <div class="banner" id="api-banner" role="status" data-i18n="banner" hidden>APIに接続できません — 再試行中</div>
+
+    <main class="main-container">
+        <aside class="fleet-panel">
+            <label class="section-title" for="oem-filter" data-i18n="maker">メーカー</label>
+            <select id="oem-filter">
+                <option value="">すべてのメーカー</option>
+            </select>
+            <h2 class="section-title" data-i18n="listHeading">デバイス一覧</h2>
+            <div class="device-list" id="device-list" aria-label="デバイス一覧">
+                <p class="list-note" data-i18n="loading">デバイス情報を読み込み中…</p>
+            </div>
+        </aside>
+
+        <section class="detail-col">
+            <div class="card empty-state" id="empty-state" data-i18n="empty" hidden>デバイスがありません — demo.ps1 を実行するか、--Demo:Fleet=true で API を起動してエージェントを実行してください</div>
+
+            <article class="card detail" id="detail" hidden>
+                <div class="detail-head">
+                    <div>
+                        <h2 id="d-model">--</h2>
+                        <p class="detail-meta" id="d-meta">--</p>
+                        <p class="detail-meta" id="d-id">--</p>
+                    </div>
+                    <div>
+                        <span class="telemetry-value online" id="d-status">--</span>
+                        <p class="detail-meta" id="d-seen">--</p>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="telemetry-item">
+                        <span class="telemetry-label" data-i18n="cpuLabel">CPU使用率</span>
+                        <span class="telemetry-value" id="cpu-value">--</span>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="cpu-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="telemetry-item">
+                        <span class="telemetry-label" data-i18n="ramLabel">メモリ使用量</span>
+                        <span class="telemetry-value" id="ram-value">--</span>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="ram-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="telemetry-item">
+                        <span class="telemetry-label" data-i18n="batteryLabel">バッテリー</span>
+                        <span class="telemetry-value" id="battery-value">--</span>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill" id="battery-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="section-title" data-i18n="issuesHeading">検出された課題</h3>
+                    <ul class="issue-list" id="d-issues"></ul>
+                </div>
+            </article>
+
+            <section class="card chat-container" id="chat" hidden>
+                <div class="chat-header">
+                    <h2 id="chat-title">--</h2>
+                </div>
+                <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+                <div class="chips" id="chips">
+                    <button type="button" class="chip" data-i18n="chip1">このデバイスの問題点は？</button>
+                    <button type="button" class="chip" data-i18n="chip2">動作を速くするには？</button>
+                    <button type="button" class="chip" data-i18n="chip3">バッテリーの状態は？</button>
+                </div>
+                <div class="input-area">
+                    <div class="input-wrapper">
+                        <input type="text" id="message-input" placeholder="このデバイスについて質問…" autocomplete="off">
+                        <button id="send-btn">
+                            <span data-i18n="send">送信</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE = '/api/assistant';
+        const POLL_MS = 2000;
+        const OFFLINE_AFTER_MS = 10000;
+        const LANG_KEY = 'oemai.lang';
+
+        // All UI strings. Issue keys match the codes returned by getIssues().
+        const I18N = {
+            ja: {
+                title: 'OEM AI フリートコンソール',
+                subtitle: 'パートナー向けデバイス健全性・AIサポート',
+                kpiDevices: 'デバイス数',
+                kpiOnline: 'オンライン',
+                kpiAttention: '要対応',
+                banner: 'APIに接続できません — 再試行中',
+                maker: 'メーカー',
+                allMakers: 'すべてのメーカー',
+                listHeading: 'デバイス一覧',
+                loading: 'デバイス情報を読み込み中…',
+                empty: 'デバイスがありません — demo.ps1 を実行するか、--Demo:Fleet=true で API を起動してエージェントを実行してください',
+                cpuLabel: 'CPU使用率',
+                ramLabel: 'メモリ使用量',
+                batteryLabel: 'バッテリー',
+                issuesHeading: '検出された課題',
+                chip1: 'このデバイスの問題点は？',
+                chip2: '動作を速くするには？',
+                chip3: 'バッテリーの状態は？',
+                placeholder: 'このデバイスについて質問…',
+                send: '送信',
+                online: 'オンライン',
+                offline: 'オフライン',
+                seenAgo: (n, unit) => `最終受信: ${n}${{ s: '秒', m: '分', h: '時間' }[unit]}前`,
+                seenUnknown: '最終受信: 不明',
+                simulated: '模擬デバイス',
+                liveAgent: '実機（エージェント接続）',
+                charging: '充電中',
+                noIssues: '問題なし',
+                live: '実機',
+                sim: '模擬',
+                askAbout: model => `${model} についてAIに質問`,
+                welcomeTitle: model => `${model} について質問してください`,
+                welcomeBody: id => `デバイス ${id} のリアルタイムテレメトリに基づいて回答します。下の質問例もご利用ください。`,
+                you: 'あなた',
+                assistant: 'AIアシスタント',
+                errorSender: 'エラー',
+                connectError: detail => `AIアシスタントに接続できません。APIが起動しているか確認してください。（${detail}）`,
+                'issue.Offline': 'オフライン',
+                'issue.High CPU': 'CPU高負荷',
+                'issue.High RAM': 'メモリ逼迫',
+                'issue.Low battery': 'バッテリー残量低下',
+            },
+            en: {
+                title: 'OEM AI Fleet Console',
+                subtitle: 'Partner device health & AI support',
+                kpiDevices: 'Devices',
+                kpiOnline: 'Online',
+                kpiAttention: 'Need attention',
+                banner: 'API unreachable — retrying',
+                maker: 'Manufacturer',
+                allMakers: 'All OEMs',
+                listHeading: 'Devices',
+                loading: 'Loading fleet…',
+                empty: 'No devices yet — run demo.ps1, or start the API with --Demo:Fleet=true and run the agent',
+                cpuLabel: 'CPU Usage',
+                ramLabel: 'RAM Usage',
+                batteryLabel: 'Battery',
+                issuesHeading: 'Issues',
+                chip1: "What's wrong with this device?",
+                chip2: 'How can I speed it up?',
+                chip3: 'Is the battery OK?',
+                placeholder: 'Ask about this device...',
+                send: 'Send',
+                online: 'Online',
+                offline: 'Offline',
+                seenAgo: (n, unit) => `last seen ${n}${unit} ago`,
+                seenUnknown: 'last seen: unknown',
+                simulated: 'simulated device',
+                liveAgent: 'live agent',
+                charging: 'charging',
+                noIssues: 'No issues',
+                live: 'LIVE',
+                sim: 'SIM',
+                askAbout: model => `Ask AI about ${model}`,
+                welcomeTitle: model => `Ask me about ${model}`,
+                welcomeBody: id => `Device ${id} — answers use its live telemetry. Try a quick question below.`,
+                you: 'You',
+                assistant: 'OemAi Assistant',
+                errorSender: 'Error',
+                connectError: detail => `Unable to connect to assistant. Please ensure the API is running. (${detail})`,
+                'issue.Offline': 'Offline',
+                'issue.High CPU': 'High CPU',
+                'issue.High RAM': 'High RAM',
+                'issue.Low battery': 'Low battery',
+            },
+        };
+
+        let lang = 'ja';
+        try {
+            const saved = localStorage.getItem(LANG_KEY);
+            if (Object.hasOwn(I18N, saved)) lang = saved;
+        } catch { /* storage blocked (private mode, policy): keep the default */ }
+
+        function t(key, ...args) {
+            const value = I18N[lang][key];
+            return typeof value === 'function' ? value(...args) : value;
+        }
+
+        const banner = document.getElementById('api-banner');
+        const filterEl = document.getElementById('oem-filter');
+        const deviceList = document.getElementById('device-list');
+        const emptyEl = document.getElementById('empty-state');
+        const detailEl = document.getElementById('detail');
+        const chatEl = document.getElementById('chat');
+        const chatTitle = document.getElementById('chat-title');
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chips = [...document.querySelectorAll('#chips .chip')];
+        const langBtns = [...document.querySelectorAll('[data-lang]')];
+
+        let devices = [];
+        let selectedId = null;
+        let chatDeviceId = null;
+        let chatSession = 0; // bumped on every device switch; replies from an older session are dropped
+        let busy = false;
+        let filterKey = null;
+        const chatHistory = [];
+
+        // Device fields come from remote agents: always render them with textContent, never innerHTML.
+        function make(tag, className, text) {
+            const el = document.createElement(tag);
+            if (className) el.className = className;
+            if (text !== undefined) el.textContent = text;
+            return el;
+        }
+
+        const pct = v => Math.round(Number(v));
+
+        function getIssues(d, now) {
+            const tel = d.telemetry;
+            const issues = [];
+            // Missing/invalid lastSeen counts as offline (a NaN comparison is false).
+            if (!(now - Date.parse(d.lastSeen) <= OFFLINE_AFTER_MS)) issues.push('Offline');
+            if (tel.cpuUsagePercent >= 85) issues.push('High CPU');
+            if (tel.ramUsagePercent >= 90) issues.push('High RAM');
+            if (tel.batteryPercent <= 20 && !tel.isCharging) issues.push('Low battery');
+            return issues;
+        }
+
+        // Devices needing attention first, then by deviceId.
+        function sortFleet(list, now) {
+            return list
+                .map(d => ({ ...d, issues: getIssues(d, now) }))
+                .sort((a, b) => (b.issues.length > 0) - (a.issues.length > 0)
+                    || String(a.deviceId).localeCompare(String(b.deviceId)));
+        }
+
+        function lastSeenText(lastSeen, now) {
+            const s = Math.max(0, Math.floor((now - Date.parse(lastSeen)) / 1000));
+            if (!Number.isFinite(s)) return t('seenUnknown');
+            return s < 60 ? t('seenAgo', s, 's') : s < 3600 ? t('seenAgo', Math.floor(s / 60), 'm') : t('seenAgo', Math.floor(s / 3600), 'h');
+        }
+
+        const issueBadge = (tag, issue) => make(tag, issue === 'Offline' ? 'badge offline' : 'badge', t(`issue.${issue}`));
+
+        // Rebuild options only when the manufacturer set changes, so an open dropdown isn't reset every poll.
+        function syncFilterOptions(fleet) {
+            const makers = [...new Set(fleet.map(d => String(d.telemetry.manufacturer)))].filter(Boolean).sort();
+            const key = makers.join('\n');
+            if (key === filterKey) return;
+            filterKey = key;
+            const keep = makers.includes(filterEl.value) ? filterEl.value : '';
+            filterEl.replaceChildren(...['', ...makers].map(m => {
+                const option = make('option', '', m || t('allMakers'));
+                option.value = m;
+                return option;
+            }));
+            filterEl.value = keep;
+        }
+
+        function render(now = Date.now()) {
+            const fleet = sortFleet(devices, now);
+            syncFilterOptions(fleet);
+            const filter = filterEl.value;
+            const visible = filter ? fleet.filter(d => String(d.telemetry.manufacturer) === filter) : fleet;
+
+            const attention = visible.filter(d => d.issues.length).length;
+            document.getElementById('kpi-devices').textContent = visible.length;
+            document.getElementById('kpi-online').textContent = visible.filter(d => !d.issues.includes('Offline')).length;
+            document.getElementById('kpi-attention').textContent = attention;
+            document.getElementById('kpi-attention-tile').classList.toggle('alert', attention > 0);
+
+            // Keep the selection while it is listed; otherwise fall back to the top row (attention-first).
+            const current = visible.find(d => d.deviceId === selectedId) ?? visible[0] ?? null;
+            selectedId = current ? current.deviceId : null;
+            if (selectedId !== chatDeviceId) resetChat(current);
+
+            renderList(visible);
+            emptyEl.hidden = fleet.length > 0;
+            detailEl.hidden = chatEl.hidden = !current;
+            if (current) renderDetail(current, now);
+        }
+
+        function renderList(visible) {
+            const focusedId = document.activeElement?.dataset?.deviceId;
+            const rows = visible.map(d => {
+                const tel = d.telemetry;
+                const btn = make('button', 'device-row');
+                btn.type = 'button';
+                btn.dataset.deviceId = d.deviceId;
+                btn.setAttribute('aria-pressed', String(d.deviceId === selectedId));
+                btn.addEventListener('click', () => selectDevice(d.deviceId));
+
+                const top = make('span', 'row-top');
+                top.append(make('strong', '', tel.deviceModel), make('span', d.isSimulated ? 'tag' : 'tag live', t(d.isSimulated ? 'sim' : 'live')));
+                const main = make('span', 'row-main');
+                main.append(top,
+                    make('span', 'row-sub', `${tel.manufacturer} · ${d.deviceId}`),
+                    make('span', 'row-stats', `CPU ${pct(tel.cpuUsagePercent)}% · RAM ${pct(tel.ramUsagePercent)}% · BAT ${pct(tel.batteryPercent)}%`));
+                if (d.issues.length) {
+                    const badges = make('span', 'badges');
+                    badges.append(...d.issues.map(i => issueBadge('span', i)));
+                    main.append(badges);
+                }
+                btn.append(make('span', d.issues.includes('Offline') ? 'dot offline' : 'dot'), main);
+                return btn;
+            });
+            deviceList.replaceChildren(...rows);
+            // Rows are rebuilt every poll; keep keyboard focus on the same device.
+            rows.find(r => r.dataset.deviceId === focusedId)?.focus({ preventScroll: true });
+        }
+
+        function renderDetail(d, now) {
+            const tel = d.telemetry;
+            const online = !d.issues.includes('Offline');
+            document.getElementById('d-model').textContent = tel.deviceModel;
+            document.getElementById('d-meta').textContent = `${tel.manufacturer} · ${tel.osVersion}`;
+            document.getElementById('d-id').textContent = `${d.deviceId} · ${t(d.isSimulated ? 'simulated' : 'liveAgent')}`;
+            const statusEl = document.getElementById('d-status');
+            statusEl.textContent = t(online ? 'online' : 'offline');
+            statusEl.className = `telemetry-value ${online ? 'online' : 'offline'}`;
+            document.getElementById('d-seen').textContent = lastSeenText(d.lastSeen, now);
+
+            const cpu = pct(tel.cpuUsagePercent);
+            updateStatBar('cpu', cpu);
+            document.getElementById('cpu-value').textContent = `${cpu}%`;
+
+            const ram = pct(tel.ramUsagePercent);
+            updateStatBar('ram', ram);
+            document.getElementById('ram-value').textContent = `${Number(tel.ramUsedGb).toFixed(1)} / ${Number(tel.ramTotalGb).toFixed(1)} GB (${ram}%)`;
+
+            const battery = pct(tel.batteryPercent);
+            updateStatBar('battery', battery, true);
+            document.getElementById('battery-value').textContent = `${battery}%${tel.isCharging ? ` · ${t('charging')}` : ''}`;
+
+            document.getElementById('d-issues').replaceChildren(...(d.issues.length
+                ? d.issues.map(i => issueBadge('li', i))
+                : [make('li', 'no-issues', t('noIssues'))]));
+
+            chatTitle.textContent = t('askAbout', tel.deviceModel);
+        }
+
+        // lowIsBad: color by low value (battery) instead of high value (CPU/RAM).
+        function updateStatBar(type, percent, lowIsBad = false) {
+            const bar = document.getElementById(`${type}-bar`);
+            bar.style.width = `${percent}%`;
+            bar.classList.remove('warning', 'critical');
+            if (lowIsBad ? percent <= 20 : percent > 90) bar.classList.add('critical');
+            else if (lowIsBad ? percent <= 40 : percent > 70) bar.classList.add('warning');
+        }
+
+        function selectDevice(deviceId) {
+            selectedId = deviceId;
+            render();
+        }
+
+        function fillWelcome(welcome, device) {
+            welcome.replaceChildren(...(device ? [
+                make('h3', '', t('welcomeTitle', device.telemetry.deviceModel)),
+                make('p', '', t('welcomeBody', device.deviceId))] : []));
+        }
+
+        function resetChat(device) {
+            chatDeviceId = device ? device.deviceId : null;
+            chatSession++;
+            chatHistory.length = 0;
+            setBusy(false); // a pending reply for the previous device will be dropped; don't keep this one locked
+            const welcome = make('div', 'welcome-message');
+            fillWelcome(welcome, device);
+            chatMessages.replaceChildren(welcome);
+        }
+
+        // Static labels. Dynamic texts follow on render(); chat history keeps the language it was written in.
+        function applyLang() {
+            document.documentElement.lang = lang;
+            document.title = t('title');
+            document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+            messageInput.placeholder = t('placeholder');
+            deviceList.setAttribute('aria-label', t('listHeading'));
+            langBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+        }
+
+        function setLang(next) {
+            lang = next;
+            try {
+                localStorage.setItem(LANG_KEY, lang);
+            } catch { /* storage blocked: the switch still applies to this page */ }
+            applyLang();
+            const welcome = chatMessages.querySelector('.welcome-message');
+            if (welcome) fillWelcome(welcome, devices.find(d => d.deviceId === chatDeviceId));
+            if (filterKey === null) return; // first poll still pending: nothing dynamic rendered yet
+            filterKey = null; // force the manufacturer options to rebuild so "All" is relabelled
+            render();
+        }
+
+        // Next poll is scheduled only after this one finishes, so requests never overlap.
+        async function poll() {
+            try {
+                const response = await fetch('/api/devices');
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
+                const data = await response.json();
+                if (!Array.isArray(data)) throw new Error('Unexpected response');
+                devices = data.filter(d => d && d.telemetry);
+                banner.hidden = true;
+            } catch {
+                banner.hidden = false; // keep the last data
+            }
+            try {
+                render();
+            } finally {
+                setTimeout(poll, POLL_MS);
+            }
+        }
+
+        function addMessage(content, sender, type = 'ai') {
+            const welcome = chatMessages.querySelector('.welcome-message');
+            if (welcome) welcome.remove();
+
+            const msg = document.createElement('div');
+            msg.className = `message ${type}`;
+            msg.innerHTML = `<div class="sender">${sender}</div><div>${escapeHtml(content)}</div>`;
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'typing-indicator';
+            indicator.className = 'message ai';
+            indicator.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+            chatMessages.appendChild(indicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function setBusy(value) {
+            busy = value;
+            messageInput.disabled = value;
+            sendBtn.disabled = value;
+            chips.forEach(c => { c.disabled = value; });
+        }
+
+        async function ask(question) {
+            const text = question.trim();
+            if (!text || busy || !selectedId) return;
+
+            const deviceId = selectedId;
+            const session = chatSession;
+            addMessage(text, t('you'), 'user');
+            setBusy(true);
+            addTypingIndicator();
+
+            try {
+                const response = await fetch(`${API_BASE}/ask`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: text, history: chatHistory.slice(-8), deviceId })
+                });
+                const body = await response.json().catch(() => null);
+                if (session !== chatSession) return; // user switched device while waiting: drop the late reply
+
+                removeTypingIndicator();
+                if (response.ok && body?.answer) {
+                    chatHistory.push({ role: 'user', content: text }, { role: 'assistant', content: body.answer });
+                    addMessage(body.answer, t('assistant'));
+                } else if (response.status !== 500 && body?.error) { // our own messages (400/404/429/503); a 500 is unexpected — don't echo it
+                    addMessage(body.error, t('errorSender'), 'error');
+                } else {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+            } catch (error) {
+                if (session !== chatSession) return;
+                removeTypingIndicator();
+                addMessage(t('connectError', error.message), t('errorSender'), 'error');
+            } finally {
+                if (session === chatSession) setBusy(false); // resetChat already released an older session
+            }
+            messageInput.focus();
+        }
+
+        function sendFromInput() {
+            const text = messageInput.value;
+            messageInput.value = '';
+            ask(text);
+        }
+
+        filterEl.addEventListener('change', () => render());
+        chips.forEach(c => c.addEventListener('click', () => ask(c.textContent)));
+        langBtns.forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+        sendBtn.addEventListener('click', sendFromInput);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendFromInput();
+        });
+
+        applyLang();
+        poll();
+    </script>
+</body>
+</html>

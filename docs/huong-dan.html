@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OEM AI Assistant — Hướng dẫn</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1f2937; --muted: #6b7280; --border: #e5e7eb;
+    --accent: #2563eb; --accent-soft: #dbeafe; --core: #7c3aed; --core-soft: #ede9fe;
+    --infra: #059669; --infra-soft: #d1fae5; --ui: #2563eb; --ui-soft: #dbeafe;
+    --warn: #b45309; --warn-soft: #fef3c7; --code-bg: #f3f4f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1115; --card: #171a21; --text: #e5e7eb; --muted: #9ca3af; --border: #2a2f3a;
+      --accent: #60a5fa; --accent-soft: #1e293b; --core: #a78bfa; --core-soft: #2e1f4d;
+      --infra: #34d399; --infra-soft: #12352a; --ui: #60a5fa; --ui-soft: #1e2a44;
+      --warn: #fbbf24; --warn-soft: #3a2e10; --code-bg: #0b0d12;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.65 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 30px; margin: 0 0 4px; }
+  h2 { font-size: 22px; margin: 44px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 17px; margin: 24px 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  nav { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; }
+  nav a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font: 14px Consolas, "Cascadia Code", monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+        overflow-x: auto; font: 13.5px/1.55 Consolas, "Cascadia Code", monospace; }
+  pre code { background: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin: 12px 0; }
+  .note { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 10px 14px; border-radius: 6px; margin: 12px 0; }
+  .warn { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 6px; margin: 12px 0; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; }
+  .t-core { background: var(--core-soft); color: var(--core); }
+  .t-infra { background: var(--infra-soft); color: var(--infra); }
+  .t-ui { background: var(--ui-soft); color: var(--ui); }
+  .layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+  .layer { border-radius: 10px; padding: 14px; border: 2px solid; background: var(--card); }
+  .layer h4 { margin: 0 0 6px; font-size: 16px; }
+  .layer p { margin: 0; font-size: 14px; color: var(--muted); }
+  .layer.core { border-color: var(--core); } .layer.core h4 { color: var(--core); }
+  .layer.infra { border-color: var(--infra); } .layer.infra h4 { color: var(--infra); }
+  .layer.ui { border-color: var(--ui); } .layer.ui h4 { color: var(--ui); }
+  .diagram { width: 100%; height: auto; display: block; margin: 8px 0; }
+  .diagram text { fill: var(--text); font: 600 14px "Segoe UI", system-ui, sans-serif; }
+  .diagram .sub { fill: var(--muted); font-weight: 400; font-size: 12px; }
+  ol.flow li { margin: 6px 0; }
+  @media (max-width: 680px) { .layers { grid-template-columns: 1fr; } nav ol { columns: 1; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>OEM AI Assistant</h1>
+<p class="lead">PoC ứng dụng Windows (WPF, .NET 8) tích hợp AI chạy trên thiết bị. Tài liệu này giải thích cấu trúc thư mục,
+lý do chia 3 project, cách chạy app và cách AI được nạp vào.</p>
+
+<nav>
+  <ol>
+    <li><a href="#tong-quan">Tổng quan</a></li>
+    <li><a href="#cau-truc">Cấu trúc thư mục</a></li>
+    <li><a href="#vi-sao-3">Vì sao chia ra 3 project</a></li>
+    <li><a href="#luong">Một câu hỏi chạy qua code như thế nào</a></li>
+    <li><a href="#chay-app">Cách chạy app</a></li>
+    <li><a href="#ai-load">AI có tự load model không?</a></li>
+    <li><a href="#web-api">Chuyển sang Web API</a></li>
+    <li><a href="#phong-van">Điểm nhấn khi phỏng vấn</a></li>
+    <li><a href="#han-che">Hạn chế hiện tại</a></li>
+  </ol>
+</nav>
+
+<!-- ================================================================ -->
+<h2 id="tong-quan">1. Tổng quan</h2>
+<p>App có 2 khung:</p>
+<ul>
+  <li><b>Bên trái — Thiết bị OEM:</b> hãng, model, Windows, CPU %, RAM, pin. Đây là <b>số liệu thật</b> của máy, cập nhật mỗi 2 giây.</li>
+  <li><b>Bên phải — Trợ lý AI:</b> ô chat. Mỗi câu hỏi được gửi tới một model AI (<b>Phi-4-mini</b>) chạy <b>ngay trên máy</b>
+      qua Microsoft <b>Foundry Local</b> — không cần Internet, không cần API key. AI được cung cấp telemetry làm ngữ cảnh,
+      và nhớ 8 tin nhắn gần nhất của cuộc trò chuyện.</li>
+</ul>
+
+<!-- ================================================================ -->
+<h2 id="cau-truc">2. Cấu trúc thư mục</h2>
+<pre><code>OemAiAssistant/
+├── OemAiAssistant.slnx                  ← file solution (mở bằng Visual Studio / VS Code)
+├── docs/huong-dan.html                  ← tài liệu này
+├── src/
+│   ├── OemAi.Core/                      <span class="tag t-core">CORE</span>  "cái gì" — nghiệp vụ, không phụ thuộc gì
+│   │   ├── Models/
+│   │   │   ├── DeviceTelemetry.cs        bản chụp số liệu máy (CPU, RAM, pin…)
+│   │   │   └── AiPrompt.cs               AiPrompt, ChatTurn (lịch sử), AssistantReply
+│   │   ├── Abstractions/
+│   │   │   ├── IAIService.cs             "hợp đồng": gửi prompt → nhận câu trả lời
+│   │   │   └── IDeviceTelemetryService.cs"hợp đồng": lấy số liệu thiết bị
+│   │   └── UseCases/
+│   │       └── DeviceAssistant.cs        luồng chính: lấy telemetry → ghép prompt → gọi AI
+│   │
+│   ├── OemAi.Infrastructure/            <span class="tag t-infra">INFRA</span> "làm bằng cách nào" — code chạm vào thế giới bên ngoài
+│   │   ├── Telemetry/
+│   │   │   ├── WindowsDeviceTelemetryService.cs  đọc máy thật (registry BIOS + Win32 API)
+│   │   │   └── MockDeviceTelemetryService.cs     số giả, dùng khi không chạy trên Windows
+│   │   ├── AI/
+│   │   │   ├── FoundryLocalAIService.cs  gọi model local qua HTTP (chuẩn OpenAI)
+│   │   │   └── MockAIService.cs          "AI" giả bằng luật if/else, dùng khi không có model
+│   │   └── DependencyInjection.cs        AddOemAiServices(): chọn và đăng ký các service
+│   │
+│   └── OemAi.Desktop/                   <span class="tag t-ui">UI</span>    "hiển thị ra sao" — WPF
+│       ├── App.xaml / App.xaml.cs        điểm khởi động: dựng Host + DI, mở cửa sổ
+│       ├── MainWindow.xaml               giao diện (XAML + DataBinding)
+│       ├── MainWindow.xaml.cs            gần như trống — chỉ gán ViewModel, tự cuộn chat
+│       └── ViewModels/MainViewModel.cs   trạng thái màn hình + lệnh Gửi / Huỷ / Cuộc trò chuyện mới
+│
+└── tests/
+    └── OemAi.Core.Tests/                xUnit — test DeviceAssistant không cần UI, không cần model</code></pre>
+
+<!-- ================================================================ -->
+<h2 id="vi-sao-3">3. Vì sao chia ra 3 project</h2>
+<p>Mỗi project trả lời <b>một câu hỏi khác nhau</b>, và có một quy tắc bắt buộc: <b>phụ thuộc chỉ được trỏ vào trong, về phía Core</b>.</p>
+
+<div class="layers">
+  <div class="layer ui"><h4>Desktop (UI)</h4><p>Hiển thị ra sao? XAML, ViewModel, nút bấm, loading. Biết cả Core và Infrastructure (để lắp ráp).</p></div>
+  <div class="layer infra"><h4>Infrastructure</h4><p>Làm bằng cách nào? Win32, registry, HTTP tới Foundry Local. Chỉ biết Core.</p></div>
+  <div class="layer core"><h4>Core</h4><p>Làm cái gì? Model dữ liệu, interface, luồng nghiệp vụ. <b>Không biết ai cả</b> — không WPF, không HTTP, không Windows.</p></div>
+</div>
+
+<svg class="diagram" viewBox="0 0 860 210" role="img" aria-label="Sơ đồ phụ thuộc: Desktop trỏ tới Infrastructure và Core, Infrastructure trỏ tới Core">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <rect x="20" y="70" width="220" height="70" rx="10" fill="var(--ui-soft)" stroke="var(--ui)" stroke-width="2"/>
+  <text x="130" y="100" text-anchor="middle">OemAi.Desktop</text>
+  <text x="130" y="122" text-anchor="middle" class="sub">WPF · MVVM · App.xaml.cs</text>
+
+  <rect x="320" y="10" width="220" height="70" rx="10" fill="var(--infra-soft)" stroke="var(--infra)" stroke-width="2"/>
+  <text x="430" y="40" text-anchor="middle">OemAi.Infrastructure</text>
+  <text x="430" y="62" text-anchor="middle" class="sub">Win32 · Foundry Local · Mock</text>
+
+  <rect x="620" y="70" width="220" height="70" rx="10" fill="var(--core-soft)" stroke="var(--core)" stroke-width="2"/>
+  <text x="730" y="100" text-anchor="middle">OemAi.Core</text>
+  <text x="730" y="122" text-anchor="middle" class="sub">Models · Interfaces · UseCase</text>
+
+  <line x1="240" y1="90" x2="318" y2="55" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="540" y1="55" x2="618" y2="90" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="240" y1="120" x2="618" y2="120" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+  <text x="430" y="170" text-anchor="middle" class="sub">Mũi tên = "tham chiếu tới". Không có mũi tên nào đi ra khỏi Core.</text>
+  <text x="430" y="192" text-anchor="middle" class="sub">tests/OemAi.Core.Tests chỉ tham chiếu Core.</text>
+</svg>
+
+<h3>Lợi ích cụ thể</h3>
+<table>
+  <tr><th>Muốn…</th><th>Sửa ở đâu</th><th>Không phải đụng</th></tr>
+  <tr><td>Đổi AI từ local sang Azure OpenAI / cloud</td><td>Thêm 1 class trong <span class="tag t-infra">Infrastructure</span>, sửa 1 dòng trong <code>DependencyInjection.cs</code></td><td>Core, ViewModel, XAML</td></tr>
+  <tr><td>Đọc telemetry qua SDK riêng của hãng OEM</td><td>Thêm 1 class implement <code>IDeviceTelemetryService</code></td><td>Core, UI, phần AI</td></tr>
+  <tr><td>Làm Web API / app WinUI 3 / CLI</td><td>Tạo project mới, gọi <code>AddOemAiServices()</code></td><td>Core, Infrastructure</td></tr>
+  <tr><td>Sửa cách ghép prompt</td><td><code>DeviceAssistant.cs</code> trong <span class="tag t-core">Core</span></td><td>UI, Infrastructure</td></tr>
+  <tr><td>Đổi giao diện</td><td><code>MainWindow.xaml</code></td><td>Mọi thứ còn lại</td></tr>
+  <tr><td>Viết unit test cho nghiệp vụ</td><td><code>tests/</code> — dùng service giả, chạy trong 20ms</td><td>Không cần GPU, model hay cửa sổ</td></tr>
+</table>
+
+<div class="note"><b>Interface là "ổ cắm".</b> <code>IAIService</code> và <code>IDeviceTelemetryService</code> nằm trong Core.
+Infrastructure cung cấp các "phích cắm" (Foundry Local, Mock, Windows, …). <code>DependencyInjection.cs</code> quyết định cắm phích nào —
+đó là chỗ duy nhất biết về các class cụ thể.</div>
+
+<!-- ================================================================ -->
+<h2 id="luong">4. Một câu hỏi chạy qua code như thế nào</h2>
+<ol class="flow">
+  <li><span class="tag t-ui">UI</span> Người dùng gõ câu hỏi, nhấn <b>Gửi</b> (hoặc Enter). Nút được bind tới <code>AskCommand</code>.</li>
+  <li><span class="tag t-ui">UI</span> <code>MainViewModel.AskAsync</code> thêm bong bóng chat của người dùng. <code>AskCommand.IsRunning = true</code>
+      → thanh loading và nút <b>Huỷ</b> tự hiện, nút Gửi tự xám (chống bấm 2 lần).</li>
+  <li><span class="tag t-ui">UI</span> ViewModel gọi <code>DeviceAssistant.AskAsync(câu hỏi, lịch sử, cancellationToken)</code>.</li>
+  <li><span class="tag t-core">Core</span> <code>DeviceAssistant</code> lấy telemetry mới nhất qua <code>IDeviceTelemetryService</code>.</li>
+  <li><span class="tag t-infra">Infra</span> <code>WindowsDeviceTelemetryService</code> đọc CPU (<code>GetSystemTimes</code>), RAM (<code>GlobalMemoryStatusEx</code>),
+      pin (<code>GetSystemPowerStatus</code>), hãng/model (registry BIOS).</li>
+  <li><span class="tag t-core">Core</span> Ghép prompt: <b>system message</b> = vai trò + telemetry làm ngữ cảnh;
+      sau đó là <b>8 tin nhắn gần nhất</b>; cuối cùng là <b>câu hỏi hiện tại</b>. Gửi qua <code>IAIService</code>.</li>
+  <li><span class="tag t-infra">Infra</span> <code>FoundryLocalAIService</code> POST tới <code>http://127.0.0.1:&lt;port&gt;/v1/chat/completions</code>
+      (chuẩn OpenAI). Model chạy trên GPU và trả lời.</li>
+  <li><span class="tag t-ui">UI</span> ViewModel thêm bong bóng AI, lưu cặp hỏi/đáp vào lịch sử, cập nhật panel telemetry bằng
+      đúng bản chụp AI đã dùng. <code>IsRunning = false</code> → loading tắt.</li>
+</ol>
+<p>Bấm <b>Huỷ</b> giữa chừng → <code>CancellationToken</code> được huỷ, request HTTP dừng ngay, chat hiện "Đã huỷ yêu cầu".</p>
+
+<!-- ================================================================ -->
+<h2 id="chay-app">5. Cách chạy app</h2>
+
+<h3>Cần có</h3>
+<table>
+  <tr><th>Thứ</th><th>Kiểm tra</th><th>Cài nếu thiếu</th></tr>
+  <tr><td>.NET SDK 8 trở lên (máy đang có 10)</td><td><code>dotnet --list-sdks</code></td><td><code>winget install Microsoft.DotNet.SDK.10</code></td></tr>
+  <tr><td>.NET 8 Desktop Runtime</td><td><code>dotnet --list-runtimes</code> có <code>WindowsDesktop.App 8.x</code></td><td><code>winget install Microsoft.DotNet.DesktopRuntime.8</code></td></tr>
+  <tr><td>Foundry Local (cho AI thật)</td><td><code>foundry --version</code></td><td><code>winget install Microsoft.FoundryLocal</code></td></tr>
+  <tr><td>Model đã tải về máy</td><td><code>foundry cache list</code></td><td><code>foundry model download Phi-4-mini-instruct-cuda-gpu:5</code></td></tr>
+</table>
+
+<h3>Chạy với AI thật (mặc định)</h3>
+<pre><code># 1. Load model GPU vào bộ nhớ (làm 1 lần sau mỗi lần khởi động lại máy)
+foundry model load Phi-4-mini-instruct-cuda-gpu:5
+
+# 2. Chạy app
+cd OemAiAssistant
+dotnet run --project src/OemAi.Desktop</code></pre>
+<p>Hoặc mở <code>OemAiAssistant.slnx</code> bằng Visual Studio, chọn <b>OemAi.Desktop</b> làm startup project, nhấn <b>F5</b>.</p>
+
+<h3>Chạy không cần model (AI giả)</h3>
+<pre><code>$env:Ai__Provider = "Mock"
+dotnet run --project src/OemAi.Desktop</code></pre>
+<p>Dùng khi máy không có Foundry Local / GPU, hoặc để demo chắc chắn không lỗi. Telemetry vẫn là số thật.</p>
+
+<h3>Chạy test</h3>
+<pre><code>dotnet test</code></pre>
+
+<!-- ================================================================ -->
+<h2 id="ai-load">6. AI có tự load model không?</h2>
+<p><b>Có, một phần.</b> Ở lần hỏi đầu tiên, <code>FoundryLocalAIService</code> tự chuẩn bị theo các bước sau, rồi nhớ kết quả cho những lần sau:</p>
+<ol class="flow">
+  <li>Chạy <code>foundry server status -o json</code> để biết server Foundry Local có đang chạy không và ở cổng nào
+      (cổng thay đổi mỗi lần khởi động, nên không thể viết cứng).</li>
+  <li>Nếu server chưa chạy → tự chạy <code>foundry server start</code>.</li>
+  <li>Chạy <code>foundry model list --loaded -o json</code> để xem model nào đang trong bộ nhớ → <b>dùng model đó</b>.</li>
+  <li>Nếu chưa có model nào → tự chạy <code>foundry model load phi-4-mini</code>.</li>
+  <li>Gửi câu hỏi. Nếu request lỗi (vd server khởi động lại sang cổng khác), lần sau sẽ dò lại từ đầu.</li>
+</ol>
+
+<table>
+  <tr><th>Việc</th><th>App tự làm?</th></tr>
+  <tr><td>Khởi động server Foundry Local</td><td>✅ Có</td></tr>
+  <tr><td>Tìm cổng của server</td><td>✅ Có</td></tr>
+  <tr><td>Load model vào bộ nhớ</td><td>✅ Có, nếu chưa có model nào được load</td></tr>
+  <tr><td>Tải model về máy (vài GB)</td><td>❌ Không — tải trước bằng <code>foundry model download …</code></td></tr>
+  <tr><td>Chọn đúng biến thể GPU thay vì NPU</td><td>❌ Không — xem cảnh báo bên dưới</td></tr>
+</table>
+
+<div class="warn"><b>Vì sao nên tự load bản GPU trước khi chạy app?</b>
+Khi app tự load theo tên chung <code>phi-4-mini</code>, Foundry Local tự chọn biến thể nó cho là tốt nhất — trên máy này là
+bản <b>NPU</b>. Nhưng NPU Intel của máy đang lỗi driver (<code>ZE_RESULT_ERROR_DEVICE_LOST</code>), nên câu hỏi sẽ báo lỗi.
+Chạy <code>foundry model load Phi-4-mini-instruct-cuda-gpu:5</code> trước thì app sẽ thấy bản GPU đang được load và dùng luôn bản đó.</div>
+
+<div class="note"><b>Lần hỏi đầu tiên chậm (~90 giây)</b> vì GPU phải khởi tạo CUDA. Các lần sau chỉ 0.3–3 giây.
+Trước khi demo, nên hỏi thử 1 câu để "làm nóng".</div>
+
+<h3>Model chạy ở đâu?</h3>
+<p>Phi-4-mini chạy trên <b>GPU NVIDIA RTX 5060</b> của máy, qua CUDA. Không có dữ liệu nào rời khỏi máy.
+Foundry Local cung cấp API giống hệt OpenAI, nên cùng một đoạn code có thể trỏ sang Azure OpenAI chỉ bằng cách đổi URL và thêm API key.</p>
+
+<!-- ================================================================ -->
+<h2 id="web-api">7. Chuyển sang Web API</h2>
+<p>Core và Infrastructure dùng lại nguyên vẹn. Chỉ cần một project ASP.NET Core mới với <code>Program.cs</code>:</p>
+<pre><code>var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddOemAiServices();          // y hệt dòng trong App.xaml.cs
+var app = builder.Build();
+
+app.MapPost("/api/assistant/ask",
+    (AskRequest r, DeviceAssistant assistant, CancellationToken ct) =>
+        assistant.AskAsync(r.Question, r.History, ct));
+
+app.Run();
+
+record AskRequest(string Question, List&lt;ChatTurn&gt;? History);</code></pre>
+<ul>
+  <li>Chạy được vì WPF và ASP.NET Core dùng chung <code>IServiceCollection</code> của .NET Generic Host.</li>
+  <li><code>DeviceAssistant</code> không lưu trạng thái — client gửi kèm lịch sử, nên server không cần session.</li>
+  <li><b>Lưu ý thật:</b> trên server, <code>IDeviceTelemetryService</code> không thể đọc phần cứng của người dùng.
+      Cần một implementation mới nhận telemetry do thiết bị gửi lên. Interface giữ nguyên — đó là lý do tách nó ra.</li>
+</ul>
+
+<!-- ================================================================ -->
+<h2 id="phong-van">8. Điểm nhấn khi phỏng vấn</h2>
+<div class="card">
+<ol>
+  <li><b>Dependency Rule:</b> Core không phụ thuộc ai. Đổi AI, đổi nguồn telemetry, đổi UI — không sửa nghiệp vụ.</li>
+  <li><b>Use case nằm trong Core, không nằm trong ViewModel:</b> logic ghép prompt test được trong 20ms, không cần UI hay model.</li>
+  <li><b>MVVM với CommunityToolkit:</b> <code>[ObservableProperty]</code>, <code>[RelayCommand(IncludeCancelCommand = true)]</code>
+      → tự có lệnh Huỷ, tự khoá nút khi đang chạy, loading bind thẳng vào <code>AskCommand.IsRunning</code>.</li>
+  <li><b>Async đúng chuẩn:</b> <code>CancellationToken</code> đi xuyên từ nút Huỷ tới request HTTP; <code>PeriodicTimer</code> cập nhật telemetry không chặn UI.</li>
+  <li><b>DI kiểu ASP.NET Core trong WPF:</b> Generic Host, constructor injection cả cho cửa sổ, không service locator.</li>
+  <li><b>AI trên thiết bị (on-device):</b> Foundry Local, chạy offline trên GPU/NPU — telemetry không rời máy. Đúng thứ OEM quan tâm.</li>
+  <li><b>Prompt engineering thực tế:</b> đặt telemetry ở system message thay vì trong câu hỏi, để model nhỏ trả lời đúng câu được hỏi
+      ("1+1 = mấy" → "2") thay vì lúc nào cũng phân tích máy.</li>
+  <li><b>Bộ nhớ hội thoại không trạng thái:</b> giữ 8 tin nhắn gần nhất vì model nhỏ có cửa sổ ngữ cảnh ~4K token.</li>
+  <li><b>Dám nói trade-off:</b> telemetry trên cloud phải do thiết bị gửi lên; model nhỏ đôi khi trả lời sai.</li>
+</ol>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="han-che">9. Hạn chế hiện tại</h2>
+<ul>
+  <li>Model nhỏ (Phi-4-mini) đôi khi sai ngữ pháp tiếng Việt hoặc khuyên sai. Có thể đổi sang <code>qwen2.5-7b</code> mà không sửa code — chỉ cần load model khác.</li>
+  <li>Bộ nhớ hội thoại mất khi tắt app.</li>
+  <li>NPU Intel của máy đang lỗi driver nên phải dùng bản GPU.</li>
+  <li><code>MockAIService</code> chỉ là luật if/else, luôn trả lời về telemetry, không đọc câu hỏi.</li>
+  <li>Câu trả lời hiện ra một lần khi xong, chưa chạy chữ từng phần (streaming).</li>
+</ul>
+<p>Lộ trình lên Web/Cloud (ticket OA-1 → OA-14) và worklog: <a href="roadmap.md"><code>docs/roadmap.md</code></a>.</p>
+
+</main>
+</body>
+</html>
